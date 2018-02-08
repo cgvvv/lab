@@ -7,6 +7,10 @@ sudo: true
 
 language: c++
 
+compiler:
+  - clang
+  - gcc
+
 addons:
   apt:
     packages:
@@ -20,6 +24,7 @@ addons:
       - python-pil
 
 before_install:
+  - openssl aes-256-cbc -K $encrypted_b9cce189f985_key -iv $encrypted_b9cce189f985_iv -in gcs_key.enc -out gcs_key.json -d
   - curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
   - echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
   - sudo add-apt-repository -y ppa:webupd8team/java
@@ -29,4 +34,7 @@ before_install:
   - sudo apt-get install bazel
 
 script:
-  - bazel test -c opt --copt=-Wno-maybe-uninitialized --copt=-Wno-sign-compare --show_progress_rate_limit=300 //...
+  - case "${CXX}" in
+      "g++")     bazel test --show_progress_rate_limit=20 -c opt --copt=-Wno-sign-compare --copt=-Wno-maybe-uninitialized //... ;;
+      "clang++") bazel test --show_progress_rate_limit=20 -c opt --copt=-Wno-sign-compare --copt=-Wno-uninitialized --cxxopt=-std=c++11 //... ;;
+    esac
