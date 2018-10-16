@@ -1,3 +1,21 @@
+# Experimental MacOSX port
+
+This is _not_ the main _DeepMind Lab_ branch.
+
+This is an experimental, non-functional development branch that contains
+incompatible changes to make _DeepMind Lab_ work on MacOSX.
+
+**Notable changes:**
+
+* Different use of `sendfile` in `public/dmlab_so_loader.cc`.
+* `glib` is no longer compiled from source, but must instead be
+  provided locally.
+* A new `objc_library` has been added that compiles `sys/sys_osx.m`.
+
+You need to pass `--apple_platform_type=macos` to all Bazel invocations.
+
+<br><br><br>
+
 # <img src="/docs/template/logo.png" alt="DeepMind Lab">
 
 *DeepMind Lab* is a 3D learning environment based on id Software's

@@ -24,7 +24,8 @@
 
 #include <dlfcn.h>
 #include <fcntl.h>
-#include <sys/sendfile.h>
+#include <sys/socket.h>
+#include <sys/uio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -104,17 +105,18 @@ void close_handle(void* context) {
 }
 
 ssize_t send_complete_file(int out_fd, int in_fd, off_t offset, ssize_t count) {
-  ssize_t bytes;
   ssize_t bytes_count = 0;
   do {
-    bytes = sendfile(out_fd, in_fd, &offset, count - bytes_count);
-    if (bytes <= 0) {
+    off_t len = count - bytes_count;
+    int res = sendfile(out_fd, in_fd, offset, &len, nullptr, 0);
+    if (res <= 0) {
       if (errno == EINTR || errno == EAGAIN) {
         continue;
+      } else {
+        return res;
       }
-      return bytes;
     }
-    bytes_count += bytes;
+    bytes_count += len;
   } while (bytes_count < count);
   return bytes_count;
 }

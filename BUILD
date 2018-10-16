@@ -686,7 +686,7 @@ genrule(
           "  A=$$(dirname $$s); " +
           "  B=$${A/assets/}; " +
           "  mkdir -p $(@D)/baselab$${B}; " +
-          "  ln -s -L -t $(@D)/baselab$${B} $$($(location //deepmind/support:realpath) $${s}); " +
+          "  ln -s $$($(location //deepmind/support:realpath) $${s}) $(@D)/baselab$${B}; " +
           "done",
     tools = ["//deepmind/support:realpath"],
     visibility = ["//visibility:public"],
@@ -704,7 +704,7 @@ genrule(
     cmd = "for s in $(SRCS); do " +
           "  A=$$(dirname $$s); " +
           "  mkdir -p $(@D)/baselab/$${A}; " +
-          "  ln -s -L -t $(@D)/baselab/$${A} $$($(location //deepmind/support:realpath) $${s}); " +
+          "  ln -s $$($(location //deepmind/support:realpath) $${s}) $(@D)/baselab/$${A}; " +
           "done",
     tools = ["//deepmind/support:realpath"],
     visibility = ["//visibility:public"],
@@ -721,7 +721,7 @@ genrule(
     outs = ["baselab/maps" + f[len("assets/maps/built"):] for f in BUILT_MAPS],
     cmd = "for s in $(SRCS); do " +
           "  mkdir -p $(@D)/baselab/maps; " +
-          "  ln -s -L -t $(@D)/baselab/maps $$($(location //deepmind/support:realpath) $${s}); " +
+          "  ln -s $$($(location //deepmind/support:realpath) $${s}) $(@D)/baselab/maps; " +
           "done",
     tools = ["//deepmind/support:realpath"],
     visibility = ["//visibility:public"],
@@ -772,7 +772,7 @@ genrule(
         CODE_DIR + "/q3_ui/ui.qvm",
     ],
     outs = ["baselab/vm.pk3"],
-    cmd = "A=$$(pwd); mkdir $(@D)/vm; ln -s -r -t $(@D)/vm -- $(SRCS); (cd $(@D); zip --quiet -r $${A}/$(OUTS) -- vm)",
+    cmd = "A=$$(pwd); mkdir $(@D)/vm; ln -s $(SRCS) $(@D)/vm; (cd $(@D); zip --quiet -r $${A}/$(OUTS) -- vm)",
     visibility = ["//testing:__subpackages__"],
 )
 
@@ -787,6 +787,30 @@ GAME_ASSETS = [
     "//deepmind/level_generation:compile_map_sh",
 ]
 
+objc_library(
+    name = "sys_osx",
+    srcs = [
+        CODE_DIR + "/sys/sys_osx.m",
+        CODE_DIR + "/sys/sys_local.h",
+        CODE_DIR + "/qcommon/surfaceflags.h",
+        CODE_DIR + "/qcommon/qcommon.h",
+        CODE_DIR + "/qcommon/cm_public.h",
+        CODE_DIR + "/qcommon/qfiles.h",
+        CODE_DIR + "/qcommon/q_shared.h",
+        CODE_DIR + "/qcommon/q_platform.h",
+    ],
+    copts = [
+        "-fno-objc-arc",
+        "-DDEDICATED",
+        ARCH_VAR,
+        STANDALONE_VAR,
+    ],
+    sdk_frameworks = [
+        "Cocoa",
+        "Carbon",
+    ],
+)
+
 cc_library(
     name = "game_lib_sdl",
     srcs = IOQ3_COMMON_SRCS + [
@@ -800,13 +824,9 @@ cc_library(
         CODE_DIR + "/sdl/sdl_glimp.c",
     ],
     hdrs = ["public/dmlab.h"],
-    copts = IOQ3_COMMON_COPTS,
+    copts = IOQ3_COMMON_COPTS + ["-framework OpenGL"],
     defines = IOQ3_COMMON_DEFINES,
-    linkopts = [
-        "-lGL",
-        "-lrt",
-    ],
-    deps = IOQ3_COMMON_DEPS,
+    deps = IOQ3_COMMON_DEPS + [":sys_osx"],
 )
 
 cc_library(
