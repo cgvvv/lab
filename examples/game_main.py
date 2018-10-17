@@ -25,35 +25,69 @@ import sys
 import numpy as np
 
 import deepmind_lab
-
+import scipy.io as scio
 
 def run(level_script, config, num_episodes):
   """Construct and start the environment."""
-  env = deepmind_lab.Lab(level_script, ['RGB_INTERLEAVED'], config)
+  env = deepmind_lab.Lab('empty_room_test', ['VEL.TRANS','DEBUG.POS.TRANS'], config)
   env.reset()
 
   observation_spec = env.observation_spec()
-  print('Observation spec:')
-  pprint.pprint(observation_spec)
+  #print('Observation spec:')
+  #pprint.pprint(observation_spec)
 
   action_spec = env.action_spec()
-  print('Action spec:')
-  pprint.pprint(action_spec)
+  #print('Action spec:')
+  #pprint.pprint(action_spec)
 
   obs = env.observations()  # dict of Numpy arrays
-  rgb_i = obs['RGB_INTERLEAVED']
-  print('Observation shape:', rgb_i.shape)
+  print(obs)
   sys.stdout.flush()
 
   # Create an action to move forwards.
-  action = np.zeros([7], dtype=np.intc)
-  action[3] = 1
+  #action = np.zeros([7], dtype=np.intc)
+  #action[3] = 1
 
   score = 0
-  for _ in xrange(num_episodes):
+  i = 0
+  j = 0
+  b = [0,0,0]
+  dataNew = '/home/GridCellModel/grid_cell_model/rat_trajectory_lowpass.mat'
+
+  for _ in xrange(1,10):
+
     while env.is_running():
+     i += 1
+     if i%3 == 0:
+      action = np.zeros([7], dtype=np.intc)
+      action[3] = input("input:")
       # Advance the environment 4 frames while executing the action.
-      reward = env.step(action, num_steps=4)
+      reward = env.step(action, num_steps=1)
+
+      obs = env.observations()  # dict of Numpy arrays
+      print(obs['DEBUG.POS.TRANS'])
+      
+      b = np.vstack((b,obs['DEBUG.POS.TRANS']))
+
+      pos_x=b[1:,0]/10
+      pos_x=np.transpose([pos_x])
+      pos_y=b[1:,1]/10
+      pos_y=np.transpose([pos_y])
+      pos_timeStamps = np.linspace(0.02,(j+1)*0.02,(j+1))
+      pos_timeStamps = np.transpose([pos_timeStamps])
+
+      scio.savemat(dataNew,{'pos_x':pos_x,'pos_y':pos_y,'pos_timeStamps':pos_timeStamps,'dt':0.02})
+      print(b)
+
+      #give a trigger to the grid cell model
+      io = open(r'/home/yang/lab/tttt.txt','w')
+      io.write(str(j))
+      j += 1
+      io.close()
+
+
+      if obs['VEL.TRANS'][0] < 10 and obs['VEL.TRANS'][0] > -10:
+        action[3] = -action[3]
 
       if reward != 0:
         score += reward
